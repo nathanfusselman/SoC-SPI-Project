@@ -1,0 +1,172 @@
+// SPI IP
+// SPI Verilog Implementation (spi.v)
+// Deborah Jahaj and Nathan Fusselman
+
+//-----------------------------------------------------------------------------
+// Hardware Target
+//-----------------------------------------------------------------------------
+
+// Target Platform: DE1-SoC Board
+
+// Hardware configuration:
+// GPIO Port:
+//   GPIO_[031-0] is used as a general purpose GPIO port
+// HPS interface:
+//   Mapped to offset of 0 in light-weight MM interface aperature
+//   IRQ80 is used as the interrupt interface to the HPS
+
+//-----------------------------------------------------------------------------
+
+module spi_dev (
+		input  wire        clk,        //    clk.clk
+		input  wire        reset,      //  reset.reset
+		input  wire [1:0]  address,    // avalon.address
+		input  wire [3:0]  byteenable, //       .byteenable
+		input  wire        chipselect, //       .chipselect
+		input  wire        read,       //       .read
+		output reg [31:0] readdata,   //       .readdata
+		input  wire        write,      //       .write
+		input  wire [31:0] writedata,  //       .writedata
+		output wire        sclk,       //   port.sclk
+		output wire        tx,         //       .tx
+		input  wire        rx,         //       .rx
+		output wire        cs0,        //       .cs0
+		output wire        cs1,        //       .cs1
+		output wire        cs2,        //       .cs2
+		output wire        cs3         //       .cs3
+	);
+
+	
+	 // internal    
+    reg [31:0] data;
+    reg [31:0] status;
+    reg [31:0] control;
+    reg [31:0] brd;
+	
+	 // register map
+    // ofs  fn
+    //   0  data (r/w)
+    //   4  status (r/w1c)
+    //   8  control (r/w)
+    //  12  brd (r/w)
+    
+    // register numbers
+    parameter DATA_REG     = 2'b00;
+    parameter STATUS_REG   = 2'b01;
+    parameter CONTROL_REG  = 2'b10;
+    parameter BRD_REG      = 2'b11;
+
+	// read register
+    always @ (*)
+    begin
+        if (read & chipselect)
+            case (address)
+                DATA_REG: 
+                    readdata = data;
+                STATUS_REG:
+                    readdata = status;
+                CONTROL_REG: 
+                    readdata = control;
+                BRD_REG: 
+                    readdata = brd;
+            endcase
+        else
+            readdata = 32'b0;
+    end        
+
+    // write register
+    always @ (posedge clk or posedge reset)
+    begin
+        if (reset)
+        begin
+            data[31:0] 		<= 32'b0;
+				status[0]		<= 1'b0; 		// RXFO
+				status[1]		<= 1'b0;			// RXFF
+				status[2]		<= 1'b0;			// RXFE
+				status[3]		<= 1'b0;			// TXFO
+				status[4]		<= 1'b0;			// TXFF
+				status[5]		<= 1'b0;			// TXFE
+				status[15:6]	<= 10'd0;		// reserved
+				status[31:16]	<= 16'h0000;
+				control[4:0] 	<= 5'b11111;	// WORD_SIZE
+				control[8:5] 	<= 4'b1111;		// CS0-3_AUTO
+				control[12:9] 	<= 4'b0000;		// CS0_3_ENABLE
+				control[14:13] <= 2'b00;		// CS_SELECT
+				control[15] 	<= 1'b0;			// ENABLE
+				control[17:16] <= 2'b00;		// MODE0
+				control[19:18] <= 2'b00;		// MODE1
+				control[21:20] <= 2'b00;		// MODE2
+				control[23:22] <= 2'b00;		// MODE3
+				control[31:24] <= 2'b00;		// MODE4				
+				brd[31:0]		<= 32'h00000000;		
+        end
+        else
+        begin
+            if (write & chipselect)
+            begin
+                case (address)
+                    DATA_REG: 
+                        data <= writedata;
+                    STATUS_REG: 
+                        status <= writedata;
+                    CONTROL_REG: 
+                        control <= writedata;
+                    BRD_REG: 
+                        brd <= writedata;
+                endcase
+            end
+        end
+    end
+	 
+	assign cs0 = control[9];
+	assign cs1 = control[10];
+	assign cs2 = control[11];
+	assign cs3 = control[12];
+	assign tx = 1'b0;
+	assign sclk = 1'b0;
+	
+	clock_generator(clk, reset, control[15], brd, sclk);
+
+endmodule
+
+// Baud Rate Generator
+module clock_generator(
+	input clk, reset, enable,
+	input[31:0] brd,
+	output reg baud_out
+	);
+		
+	// brd[31:6] is the integer part, brd[5:0] is the fractional part
+	// since toggling about at 2x rate
+	// toggling integer count is brd[31:7] and fractional count is brd[6:0]
+	
+	reg clk_div_2_out;
+	reg[31:0] count;
+	reg[31:0] target; 
+
+	always @ (posedge clk)
+	begin
+		if(reset || !enable)
+		begin
+			clk_div_2_out <= 1'b0;
+			baud_out <= 1'b0;
+			count <= 32'b0;
+			target <= brd;
+		end
+		else
+		begin
+			//toggle output
+			clk_div_2_out <= !clk_div_2_out;
+			//increment by 1.0
+			count <= count + 32'b10000000;
+			//if integer portion matches, advance match and toggle clk_out
+			if (count[31:7] == target[31:7])
+			begin
+				 target <= target + brd;
+				 baud_out <= !baud_out;
+			end
+		end
+	end
+
+endmodule
+

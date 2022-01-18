@@ -1,0 +1,4 @@
+#define LW_BRIDGE_BASE         0xFF200000
+
+#define GPIO_BASE_OFFSET       0x00000000
+#define QE_BASE_OFFSET         0x00001000

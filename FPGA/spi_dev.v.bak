@@ -1,0 +1,47 @@
+// spi_dev.v
+
+// This file was auto-generated as a prototype implementation of a module
+// created in component editor.  It ties off all outputs to ground and
+// ignores all inputs.  It needs to be edited to make it do something
+// useful.
+// 
+// This file will not be automatically regenerated.  You should check it in
+// to your version control system if you want to keep it.
+
+`timescale 1 ps / 1 ps
+module spi_dev (
+		input  wire        clk,        //    clk.clk
+		input  wire        reset,      //  reset.reset
+		input  wire [1:0]  address,    // avalon.address
+		input  wire [3:0]  byteenable, //       .byteenable
+		input  wire        chipselect, //       .chipselect
+		input  wire        read,       //       .read
+		output wire [31:0] readdata,   //       .readdata
+		input  wire        write,      //       .write
+		input  wire [31:0] writedata,  //       .writedata
+		output wire        sclk,       //   port.sclk
+		output wire        tx,         //       .tx
+		input  wire        rx,         //       .rx
+		output wire        cs0,        //       .cs0
+		output wire        cs1,        //       .cs1
+		output wire        cs2,        //       .cs2
+		output wire        cs3         //       .cs3
+	);
+
+	// TODO: Auto-generated HDL template
+
+	assign readdata = 32'b00000000000000000000000000000000;
+
+	assign cs1 = 1'b0;
+
+	assign cs0 = 1'b0;
+
+	assign cs3 = 1'b0;
+
+	assign cs2 = 1'b0;
+
+	assign tx = 1'b0;
+
+	assign sclk = 1'b0;
+
+endmodule

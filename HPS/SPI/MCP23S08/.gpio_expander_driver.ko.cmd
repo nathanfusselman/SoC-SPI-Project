@@ -1,0 +1,1 @@
+cmd_/home/root/Documents/Projects/SPI/MCP23S08/gpio_expander_driver.ko := ld -EL -r  -T ./scripts/module-common.lds --build-id  -o /home/root/Documents/Projects/SPI/MCP23S08/gpio_expander_driver.ko /home/root/Documents/Projects/SPI/MCP23S08/gpio_expander_driver.o /home/root/Documents/Projects/SPI/MCP23S08/gpio_expander_driver.mod.o
